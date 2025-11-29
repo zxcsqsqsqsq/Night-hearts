@@ -39,23 +39,23 @@ if (applyForm) {
         formMessage.className = '';
         
         try {
-            // ЗАМЕНИ 'YOUR_FORM_ID' на свой ID из Formspree
             const FORMSPREE_ID = 'f/mldyywyg';
+            
+            // Формируем данные в формате URL-encoded (нужно для Formspree)
+            const formDataEncoded = new URLSearchParams();
+            formDataEncoded.append('fullName', formData.fullName);
+            formDataEncoded.append('email', formData.email);
+            formDataEncoded.append('telegram', formData.telegram);
+            formDataEncoded.append('adminType', formData.adminType);
+            formDataEncoded.append('experience', formData.experience);
+            formDataEncoded.append('reason', formData.reason);
             
             const response = await fetch(`https://formspree.io/${FORMSPREE_ID}`, {
                 method: 'POST',
                 headers: {
-                    'Accept': 'application/json',
-                    'Content-Type': 'application/json'
+                    'Accept': 'application/json'
                 },
-                body: JSON.stringify({
-                    fullName: formData.fullName,
-                    email: formData.email,
-                    telegram: formData.telegram,
-                    adminType: formData.adminType,
-                    experience: formData.experience,
-                    reason: formData.reason
-                })
+                body: formDataEncoded
             });
             
             const result = await response.json();

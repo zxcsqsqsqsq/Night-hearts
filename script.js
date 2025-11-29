@@ -39,19 +39,30 @@ if (applyForm) {
         formMessage.className = '';
         
         try {
-            const response = await fetch('send-email.php', {
+            // ЗАМЕНИ 'YOUR_FORM_ID' на свой ID из Formspree
+            const FORMSPREE_ID = 'f/mldyywyg';
+            
+            const response = await fetch(`https://formspree.io/${FORMSPREE_ID}`, {
                 method: 'POST',
                 headers: {
+                    'Accept': 'application/json',
                     'Content-Type': 'application/json'
                 },
-                body: JSON.stringify(formData)
+                body: JSON.stringify({
+                    fullName: formData.fullName,
+                    email: formData.email,
+                    telegram: formData.telegram,
+                    adminType: formData.adminType,
+                    experience: formData.experience,
+                    reason: formData.reason
+                })
             });
             
             const result = await response.json();
             
-            if (result.success) {
+            if (response.ok) {
                 formMessage.className = 'form-message success';
-                formMessage.innerHTML = '✅ ' + result.message;
+                formMessage.innerHTML = '✅ Заявка успешно отправлена! Проверь почту.';
                 applyForm.reset();
                 
                 // Скрываем сообщение через 5 секунд
@@ -61,11 +72,11 @@ if (applyForm) {
                 }, 5000);
             } else {
                 formMessage.className = 'form-message error';
-                formMessage.innerHTML = '❌ ' + result.message;
+                formMessage.innerHTML = '❌ Ошибка отправки. Попробуй позже.';
             }
         } catch (error) {
             formMessage.className = 'form-message error';
-            formMessage.innerHTML = '❌ Ошибка сети. Проверьте интернет и попробуйте снова.';
+            formMessage.innerHTML = '❌ Ошибка сети. Проверь интернет и попробуй снова.';
             console.error('Ошибка:', error);
         }
         

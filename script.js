@@ -236,3 +236,121 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 console.log('🎉 Сайт Ночное сердце успешно загружен!');
+
+// ========== VOTING SYSTEM ==========
+const candidates = ['дикси', 'вискас', 'эндорфин', 'денир', 'сонная'];
+
+// Инициализация голосов из localStorage
+function initializeVotes() {
+    const savedVotes = localStorage.getItem('coOwnerVotes');
+    if (!savedVotes) {
+        const initialVotes = {};
+        candidates.forEach(candidate => {
+            initialVotes[candidate] = 0;
+        });
+        localStorage.setItem('coOwnerVotes', JSON.stringify(initialVotes));
+    }
+}
+
+// Получить текущий IP пользователя для отслеживания голоса (максимально простой способ)
+function getUserVoteKey() {
+    let userKey = localStorage.getItem('userVoteKey');
+    if (!userKey) {
+        userKey = 'user_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+        localStorage.setItem('userVoteKey', userKey);
+    }
+    return userKey;
+}
+
+// Получить голос пользователя
+function getUserVote() {
+    const userKey = getUserVoteKey();
+    return localStorage.getItem(userKey + '_voted_for');
+}
+
+// Обновить отображение голосов
+function updateVoteDisplay() {
+    const votes = JSON.parse(localStorage.getItem('coOwnerVotes') || '{}');
+    const totalVotes = Object.values(votes).reduce((a, b) => a + b, 0);
+    
+    // Обновляем карточки голосования
+    candidates.forEach(candidate => {
+        const count = votes[candidate] || 0;
+        const countElement = document.querySelector(`[data-count="${candidate}"]`);
+        if (countElement) {
+            countElement.textContent = count + (count % 10 === 1 && count !== 11 ? ' голос' : count % 10 >= 2 && count % 10 <= 4 && (count < 10 || count >= 20) ? ' голоса' : ' голосов');
+        }
+        
+        // Обновляем результаты
+        const percent = totalVotes > 0 ? Math.round((count / totalVotes) * 100) : 0;
+        const resultItem = document.querySelector(`[data-result="${candidate}"]`);
+        if (resultItem) {
+            const resultBar = resultItem.querySelector('.result-fill');
+            const resultPercent = resultItem.querySelector('.result-percent');
+            if (resultBar) resultBar.style.width = percent + '%';
+            if (resultPercent) resultPercent.textContent = percent + '%';
+        }
+    });
+    
+    // Обновляем состояние кнопок
+    const userVote = getUserVote();
+    document.querySelectorAll('.vote-btn').forEach(btn => {
+        const candidate = btn.getAttribute('data-vote');
+        if (userVote === candidate) {
+            btn.classList.add('voted');
+            btn.disabled = true;
+            btn.textContent = '✅ Вы голосовали';
+        } else if (userVote) {
+            btn.disabled = true;
+            btn.style.opacity = '0.5';
+        } else {
+            btn.classList.remove('voted');
+            btn.disabled = false;
+            btn.textContent = 'Голосовать';
+            btn.style.opacity = '1';
+        }
+    });
+}
+
+// Обработчик клика по кнопке голосования
+function setupVotingButtons() {
+    document.querySelectorAll('.vote-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const candidate = this.getAttribute('data-vote');
+            const userKey = getUserVoteKey();
+            const votes = JSON.parse(localStorage.getItem('coOwnerVotes') || '{}');
+            
+            // Проверяем, голосовал ли пользователь уже
+            if (localStorage.getItem(userKey + '_voted_for')) {
+                alert('Вы уже голосовали! Спасибо за участие 💙');
+                return;
+            }
+            
+            // Добавляем голос
+            votes[candidate] = (votes[candidate] || 0) + 1;
+            localStorage.setItem('coOwnerVotes', JSON.stringify(votes));
+            localStorage.setItem(userKey + '_voted_for', candidate);
+            
+            // Показываем уведомление
+            this.textContent = '✅ Голос учтён!';
+            this.classList.add('voted');
+            
+            // Обновляем отображение
+            updateVoteDisplay();
+            
+            setTimeout(() => {
+                this.textContent = 'Спасибо!';
+            }, 500);
+        });
+    });
+}
+
+// Инициализация системы голосования при загрузке страницы
+document.addEventListener('DOMContentLoaded', () => {
+    initializeVotes();
+    updateVoteDisplay();
+    setupVotingButtons();
+    
+    // Обновляем отображение каждые 2 секунды (для синхронизации между вкладками)
+    setInterval(updateVoteDisplay, 2000);
+});
